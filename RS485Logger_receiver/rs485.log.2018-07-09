@@ -1,0 +1,39 @@
+2018-07-09 22:13:35,688 INFO     Starting RS485 logger
+2018-07-09 22:13:35,689 INFO     starting up on 192.168.0.11 port 8888
+2018-07-09 22:13:35,689 ERROR    Traceback (most recent call last):
+2018-07-09 22:13:35,689 ERROR      File "RS485Logger_receiver.py", line 71, in <module>
+2018-07-09 22:13:35,689 ERROR    sock.bind(server_address)
+2018-07-09 22:13:35,689 ERROR      File "/usr/lib/python2.7/socket.py", line 228, in meth
+2018-07-09 22:13:35,691 ERROR    return getattr(self._sock,name)(*args)
+2018-07-09 22:13:35,692 ERROR    TypeError
+2018-07-09 22:13:35,692 ERROR    :
+2018-07-09 22:13:35,692 ERROR    an integer is required
+2018-07-09 22:14:47,416 INFO     Starting RS485 logger
+2018-07-09 22:14:47,417 INFO     starting up on 192.168.0.11 port 8888
+2018-07-09 22:14:55,463 INFO     *****Exception in main loop******
+2018-07-09 22:14:55,463 INFO     Traceback (most recent call last):
+2018-07-09 22:14:55,464 INFO       File "RS485Logger_receiver.py", line 75, in <module>
+2018-07-09 22:14:55,464 INFO         data, address = sock.recvfrom(256)
+2018-07-09 22:14:55,464 INFO     KeyboardInterrupt
+2018-07-09 22:14:55,465 ERROR    Traceback (most recent call last):
+2018-07-09 22:14:55,465 ERROR      File "RS485Logger_receiver.py", line 83, in <module>
+2018-07-09 22:14:55,465 ERROR    scheduler.shutdown()
+2018-07-09 22:14:55,465 ERROR    NameError
+2018-07-09 22:14:55,466 ERROR    :
+2018-07-09 22:14:55,466 ERROR    name 'scheduler' is not defined
+2018-07-09 22:16:02,334 INFO     Starting RS485 logger
+2018-07-09 22:16:02,334 INFO     starting up on 192.168.0.11 port 8888
+2018-07-09 22:16:48,115 INFO     *****Exception in main loop******
+2018-07-09 22:16:48,115 INFO     Traceback (most recent call last):
+2018-07-09 22:16:48,115 INFO       File "RS485Logger_receiver.py", line 74, in <module>
+2018-07-09 22:16:48,116 INFO         data, address = sock.recvfrom(256)
+2018-07-09 22:16:48,116 INFO     KeyboardInterrupt
+2018-07-09 22:16:48,116 INFO     EXITING RS485 logger
+2018-07-09 22:21:01,912 INFO     Starting RS485 logger
+2018-07-09 22:21:01,913 INFO     starting up on 192.168.0.11 port 8888
+2018-07-09 22:21:11,246 INFO     *****Exception in main loop******
+2018-07-09 22:21:11,246 INFO     Traceback (most recent call last):
+2018-07-09 22:21:11,247 INFO       File "RS485Logger_receiver.py", line 74, in <module>
+2018-07-09 22:21:11,247 INFO         data, address = sock.recvfrom(256)
+2018-07-09 22:21:11,247 INFO     KeyboardInterrupt
+2018-07-09 22:21:11,247 INFO     EXITING RS485 logger
