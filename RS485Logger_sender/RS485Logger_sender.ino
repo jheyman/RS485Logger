@@ -4,27 +4,28 @@
 #include <EthernetUdp.h>
 #include <MsTimer2.h>
 
+#define MESSAGE_GAP_TIMEOUT_IN_MS 5
+#define LED_TOGGLE_MSGS 50
 
 byte mac[] = {
   0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0xED
 };
 IPAddress local_ip(192, 168, 0, 40);
-IPAddress remote_ip(192, 168, 0, 11);
+//IPAddress remote_ip(192, 168, 0, 11);
+// Use broadcast address, to not have to care about the IP of the receiver.
+IPAddress remote_ip(255, 255, 255, 255);
 
 unsigned int localPort = 8888;
 
-char  ReplyBuffer[256];     
+char RecvBuffer[256];     
 
 EthernetUDP Udp;
 
-int nbReceived = 0;
-unsigned long start_time;
-unsigned long stop_time;
+unsigned int recvIndex = 0;
+unsigned long receiveTime = 0;
 
-unsigned long latestCharReceivedTime=0;
-unsigned long now=0;
-unsigned long gaptime=0;
-const byte TEST_PIN = 2;
+char receiveTimeString[16];
+
 const byte LED_PIN = 13;
 
 void setup()
@@ -34,29 +35,19 @@ void setup()
   
   Serial.begin(1000000);
   
-  pinMode (TEST_PIN, OUTPUT);  // driver output enable
-  digitalWrite (TEST_PIN, LOW);  // disable sending
   pinMode(LED_PIN, OUTPUT);
 
-  MsTimer2::set(75, onTimer);
-  //MsTimer2::start();  
+  // set an end-of-message detection timeout of 5ms
+  MsTimer2::set(MESSAGE_GAP_TIMEOUT_IN_MS, onTimer);
 }
-
-bool firstIdleAfterChar=false;
 
 bool dumpData = false;
 bool timerStarted = false;
 
-
+// If this timer expires, this means no additional character was received for a while: notify main loop
 void onTimer() {
-
-  digitalWrite (TEST_PIN, HIGH);        
-  delay(100);
-  digitalWrite (TEST_PIN, LOW);
   dumpData = true;        
 }
-
-
 
 void loop()
 {
@@ -64,61 +55,37 @@ void loop()
 
    if (Serial.available() > 0) {
       received = Serial.read();     
-      ReplyBuffer[nbReceived++] = received;
-      firstIdleAfterChar = false;
-      //MsTimer2::stop();  
+      RecvBuffer[recvIndex++] = received;
    }
 
-        // first empty buffer after RX : initialize gaptime 
-        if (nbReceived>0) {
+    // first time we get an empty buffer after receiving stuff:
+    // this could be the end of the message, (re)start the end-of-message detection timer. 
+    if (recvIndex>0) {
 
-          if (!timerStarted){
-            MsTimer2::start();
-            timerStarted = true;
-          }
-         /*
-          if (firstIdleAfterChar==false) {
-            
-            firstIdleAfterChar = true;
-            //latestCharReceivedTime = micros();
-            //gaptime = 0;
-            //digitalWrite (TEST_PIN, HIGH);      
-            MsTimer2::start();  
-          }
-          else
-          {
-            //now = micros();
-            //gaptime  += (now - latestCharReceivedTime);
-            //latestCharReceivedTime = now;
-          }  
-          */
-        } 
+      if (!timerStarted){
+        MsTimer2::start();
+        timerStarted = true;
+      }
+    } 
 
-        
-
-
-
+   // If the timer expired and positioned this var, we should now dump the received message
+   // into a UDP packet to the remote host/logger.
    if (dumpData) {
+      receiveTime = micros() - MESSAGE_GAP_TIMEOUT_IN_MS*1000; 
+      
+      // reinitialize vars for next detection/dump
       dumpData = false;
       MsTimer2::stop();
-      timerStarted = false;
-   // if (nbReceived >=120) {
-    //now = micros();
-   //if (nbReceived !=0 && ((now - latestCharReceivedTime) > 10000)) {
-    //if (gaptime > 10000) {
-       //digitalWrite (TEST_PIN, LOW); 
-            
-        digitalWrite (LED_PIN, HIGH);  // flash LED 
-        Udp.beginPacket(remote_ip, 8888);
-        Udp.write(ReplyBuffer, nbReceived);
-        Udp.endPacket();
-       
-       delay(100);
-       digitalWrite (LED_PIN, LOW);  // turn LED back off
+      timerStarted = false;     
+     
+      // build and send UDP message
+      Udp.beginPacket(remote_ip, 8888);
+      sprintf(receiveTimeString, "%015lu:", receiveTime);
+      Udp.write(receiveTimeString, strlen(receiveTimeString));
+      Udp.write(RecvBuffer, recvIndex);
+      Udp.endPacket();
 
-       //delay(900);
-       firstIdleAfterChar = false;
-       nbReceived = 0;
+      // reset index for next message
+      recvIndex = 0;
    } 
-   
 } 

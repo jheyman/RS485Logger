@@ -17,15 +17,24 @@ from ConfigParser import SafeConfigParser
 parser = SafeConfigParser()
 parser.read('RS485Logger.ini')
 
-# Read path to log file
+# Read config params
 LOG_FILENAME = parser.get('config', 'log_filename')
-SERVER_IP = parser.get('config', 'server_ip')
+#SERVER_IP = parser.get('config', 'server_ip')
 LISTEN_PORT = parser.getint('config', 'listen_port')
+
+REF_DATA_HEX = parser.get('config', 'reference_data_hex')
+ExpectedData=[]
+if (REF_DATA_HEX!=""):
+	ExpectedData = [int(e.strip(),16) for e in parser.get('config', 'reference_data_hex').split(',')]
+
+doNotCheckMessage = False
+if (len(ExpectedData)==0):
+	doNotCheckMessage = True
 
 #################
 #  LOGGING SETUP
 #################
-logging.basicConfig()
+#logging.basicConfig()
 
 LOG_LEVEL = logging.INFO  # Could be e.g. "DEBUG" or "WARNING"
 
@@ -35,10 +44,14 @@ logger = logging.getLogger(__name__)
 # Set the log level to LOG_LEVEL
 logger.setLevel(LOG_LEVEL)
 # Make a handler that writes to a file, making a new file at midnight and keeping 3 backups
-handler = logging.handlers.TimedRotatingFileHandler(LOG_FILENAME, when="midnight", backupCount=3)
-#handler = logging.handlers.RotatingFileHandler(LOG_FILENAME, maxBytes=1000000, backupCount=5)
+#handler = logging.handlers.TimedRotatingFileHandler(LOG_FILENAME, when="midnight", backupCount=3)
+
+# Handler writing to a file, rotating the file every 50MB
+handler = logging.handlers.RotatingFileHandler(LOG_FILENAME, maxBytes=50000000)
 # Format each log message like this
-formatter = logging.Formatter('%(asctime)s %(levelname)-8s %(message)s')
+#formatter = logging.Formatter('%(asctime)s %(message)s')
+formatter = logging.Formatter("%(asctime)s %(message)s", "%d/%m %H:%M:%S")
+
 # Attach the formatter to the handler
 handler.setFormatter(formatter)
 # Attach the handler to the logger
@@ -64,7 +77,9 @@ sys.stderr = MyLogger(logger, logging.ERROR)
 logger.info('Starting RS485 logger')
 
 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-server_address = (SERVER_IP, LISTEN_PORT)
+#server_address = (SERVER_IP, LISTEN_PORT)
+# Passing '' as the IP address will listen on all local IP addresses, so no need to care which broadcast address to use.
+server_address = ('', LISTEN_PORT)
 logger.info('starting up on %s port %s' % server_address, )
 sock.bind(server_address)
 
@@ -72,7 +87,18 @@ try:
 
 	while True:
 		data, address = sock.recvfrom(256)
-		logger.info( '%s' % data)
+		recvList = data.split(':');
+		timestamp = recvList[0]
+		payload_as_charlist = ''.join(recvList[1:])
+		payload= [ord(elem) for elem in payload_as_charlist]
+		cmp_list = payload
+
+		if (doNotCheckMessage):
+			logger.info( '%s:%s' % (timestamp, ','.join(x.encode('hex') for x in payload_as_charlist)))
+		elif cmp(payload, ExpectedData) == 0:
+			logger.info( '%s:OK' % timestamp)
+		else:
+			logger.info( '%s:!!!!!!ERROR!!!!!!:%s' % (timestamp, ','.join(x.encode('hex') for x in payload_as_charlist)))
 
 except:
 	logger.info("*****Exception in main loop******")
