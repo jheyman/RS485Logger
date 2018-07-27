@@ -1,8 +1,8 @@
 const byte ENABLE_PIN = 2;
 const byte LED_PIN = 13;
 
-#define ERROR_WRONG_DATA_EVERY 10
-#define ERROR_SHORT_DATA_EVERY 25
+#define ERROR_WRONG_DATA_EVERY 100
+#define ERROR_SHORT_DATA_EVERY 250
 char sendBuf[120];
 char sendWrongBuf[120];
 char sendTooShortBuf[60];

@@ -22,9 +22,11 @@ char RecvBuffer[256];
 EthernetUDP Udp;
 
 unsigned int recvIndex = 0;
+unsigned long msgIndex = 0;
 unsigned long receiveTime = 0;
 
-char receiveTimeString[16];
+char receiveTimeString[32];
+char msgIndexString[32];
 
 const byte LED_PIN = 13;
 
@@ -76,13 +78,22 @@ void loop()
       // reinitialize vars for next detection/dump
       dumpData = false;
       MsTimer2::stop();
-      timerStarted = false;     
+      timerStarted = false;   
+
+      msgIndex++ ;
+      if (msgIndex > 999) msgIndex = 0;
      
       // build and send UDP message
       Udp.beginPacket(remote_ip, 8888);
+      
       sprintf(receiveTimeString, "%015lu:", receiveTime);
       Udp.write(receiveTimeString, strlen(receiveTimeString));
+
+      sprintf(msgIndexString, "%04lu:", msgIndex);
+      Udp.write(msgIndexString, strlen(msgIndexString));
+      
       Udp.write(RecvBuffer, recvIndex);
+    
       Udp.endPacket();
 
       // reset index for next message

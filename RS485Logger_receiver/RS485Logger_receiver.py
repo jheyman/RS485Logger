@@ -47,7 +47,7 @@ logger.setLevel(LOG_LEVEL)
 #handler = logging.handlers.TimedRotatingFileHandler(LOG_FILENAME, when="midnight", backupCount=3)
 
 # Handler writing to a file, rotating the file every 50MB
-handler = logging.handlers.RotatingFileHandler(LOG_FILENAME, maxBytes=50000000)
+handler = logging.handlers.RotatingFileHandler(LOG_FILENAME, maxBytes=25000000, backupCount=999)
 # Format each log message like this
 #formatter = logging.Formatter('%(asctime)s %(message)s')
 formatter = logging.Formatter("%(asctime)s %(message)s", "%d/%m %H:%M:%S")
@@ -84,25 +84,38 @@ logger.info('starting up on %s port %s' % server_address, )
 sock.bind(server_address)
 
 try:
-
 	while True:
-		data, address = sock.recvfrom(256)
-		recvList = data.split(':');
-		timestamp = recvList[0]
-		payload_as_charlist = ''.join(recvList[1:])
-		payload= [ord(elem) for elem in payload_as_charlist]
-		cmp_list = payload
+		try:
+			data, address = sock.recvfrom(256)
+			recvList = data.split(':');
+			timestamp = recvList[0]
+			msgIndex = recvList[1]
+			payload_as_charlist = ''.join(recvList[2:])
+			payload= [ord(elem) for elem in payload_as_charlist]
+			cmp_list = payload
 
-		if (doNotCheckMessage):
-			logger.info( '%s:%s' % (timestamp, ','.join(x.encode('hex') for x in payload_as_charlist)))
-		elif cmp(payload, ExpectedData) == 0:
-			logger.info( '%s:OK' % timestamp)
-		else:
-			logger.info( '%s:!!!!!!ERROR!!!!!!:%s' % (timestamp, ','.join(x.encode('hex') for x in payload_as_charlist)))
+			if (doNotCheckMessage):
+				logger.info( '%s:%s:%s' % (timestamp, msgIndex, ','.join(x.encode('hex') for x in payload_as_charlist)))
+			elif cmp(payload, ExpectedData) == 0:
+				logger.info( '%s:%s:OK' % (timestamp,msgIndex))
+			else:
+				logger.info( '%s:%s:!!!!!!ERROR!!!!!!:%s' % (timestamp, msgIndex, ','.join(x.encode('hex') for x in payload_as_charlist)))
+		except KeyboardInterrupt:
+			raise
+		except:
+			logger.info("*****Exception in main loop******")
+			exc_type, exc_value, exc_traceback = sys.exc_info()
+			traceback.print_exception(exc_type, exc_value, exc_traceback,limit=2, file=sys.stdout)	
+			del exc_traceback
+			logger.info('LOOPING after exception in 10 seconds')
+			time.sleep(10)
+			pass
 
+except KeyboardInterrupt:
+	logger.info("manually interrupted")
+except NameError as n:
+	print("[ERROR] NameError %s" % n)
 except:
-	logger.info("*****Exception in main loop******")
 	exc_type, exc_value, exc_traceback = sys.exc_info()
 	traceback.print_exception(exc_type, exc_value, exc_traceback,limit=2, file=sys.stdout)	
 	del exc_traceback
-	logger.info('EXITING RS485 logger')
